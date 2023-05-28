@@ -378,7 +378,7 @@ DWORD __stdcall Thread(LPVOID p)
 		return 0;
 	}
 
-	auto ReadToEnd = Utils::PatternScan("UserAssembly.dll", "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05");
+	auto ReadToEnd = Utils::PatternScan("UserAssembly.dll", "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 80 3D 8E ? ? 04 00 48 8B D9");
 	Utils::ConsolePrint("ReadToEnd: %p\n", ReadToEnd);
 
 	if (!ReadToEnd || ReadToEnd % 16 > 0)
