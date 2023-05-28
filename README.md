@@ -1,7 +1,7 @@
 
 # RSAPatch
 A patch to get into grass cutting for a certain anime game
- - Updated for 3.5.5x, and above (maybe)
+ - Updated for 3.7.5x, and above (maybe)
  - Supports older versions as well
 ## How to Use?
 
