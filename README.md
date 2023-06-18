@@ -2,7 +2,7 @@
 # RSAPatch
 A patch to get into grass cutting for a certain anime game
  - Updated for 3.7.5x, and above (maybe)
- - Supports older versions as well (I'm lazy and didn't leave 3.5.5x support)
+ - Supports older versions as well
 ## How to Use?
 
  - Download dll from release or compile it (**as Release**) yourself
