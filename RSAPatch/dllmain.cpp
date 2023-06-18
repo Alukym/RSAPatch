@@ -371,14 +371,19 @@ DWORD __stdcall Thread(LPVOID p)
 	PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)UserAssembly;
 	PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)(UserAssembly + dos->e_lfanew);
 	DWORD timestamp = nt->FileHeader.TimeDateStamp;
+	Utils::ConsolePrint("timeStamp: %p\n", timestamp);
+
+	const char* ReadToEndPattern = "";
 
 	if (timestamp <= 0x63ECA960)
 	{
 		OldVersion();
 		return 0;
 	}
+	else if (timestamp <= 0x645B9C78) ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05"; //3.5.5x
+	else ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 80 3D 8E ? ? 04 00 48 8B D9"; // 3.7.5x
 
-	auto ReadToEnd = Utils::PatternScan("UserAssembly.dll", "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 80 3D 8E ? ? 04 00 48 8B D9");
+	auto ReadToEnd = Utils::PatternScan("UserAssembly.dll", ReadToEndPattern);
 	Utils::ConsolePrint("ReadToEnd: %p\n", ReadToEnd);
 
 	if (!ReadToEnd || ReadToEnd % 16 > 0)
