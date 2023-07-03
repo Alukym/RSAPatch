@@ -286,7 +286,7 @@ void ACheckForThoseWhoCannotFollowInstructions(LPVOID instance)
 
 	char szModulePath[MAX_PATH]{};
 	GetModuleFileNameA((HMODULE)instance, szModulePath, MAX_PATH);
-	
+
 	std::filesystem::path ModulePath = szModulePath;
 	std::string ModuleName = ModulePath.filename().string();
 	std::transform(ModuleName.begin(), ModuleName.end(), ModuleName.begin(), ::tolower);
@@ -301,9 +301,9 @@ void ACheckForThoseWhoCannotFollowInstructions(LPVOID instance)
 		PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)mhypbase;
 		PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)((uintptr_t)mhypbase + dosHeader->e_lfanew);
 		auto sizeOfImage = ntHeaders->OptionalHeader.SizeOfImage;
-		
+
 		// over 1MB
-		if (sizeOfImage > 1 * 1024 * 1024) 
+		if (sizeOfImage > 1 * 1024 * 1024)
 			return;
 
 		// uh oh
@@ -342,7 +342,7 @@ DWORD __stdcall Thread(LPVOID p)
 	{
 		// use EnumWindows to pinpoint the target window
 		// as there could be other window with the same class name
-		EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL __stdcall {
+		EnumWindows([](HWND hwnd, LPARAM lParam)->BOOL __stdcall {
 
 			DWORD wndpid = 0;
 			GetWindowThreadProcessId(hwnd, &wndpid);
@@ -365,8 +365,8 @@ DWORD __stdcall Thread(LPVOID p)
 		Sleep(2000);
 	}
 
-	DisableVMP(); 
-	
+	DisableVMP();
+
 	auto UserAssembly = (uintptr_t)GetModuleHandleA("UserAssembly.dll");
 	PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)UserAssembly;
 	PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)(UserAssembly + dos->e_lfanew);
@@ -381,7 +381,8 @@ DWORD __stdcall Thread(LPVOID p)
 		return 0;
 	}
 	else if (timestamp <= 0x645B9C78) ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05"; //3.5.5x
-	else ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 80 3D 8E ? ? 04 00 48 8B D9"; // 3.7.5x
+	else if (timestamp <= 0x64665A11) ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 80 3D 8E ? ? 04 00 48 8B D9"; // 3.7.5
+	else ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05"; // 3.8.0
 
 	auto ReadToEnd = Utils::PatternScan("UserAssembly.dll", ReadToEndPattern);
 	Utils::ConsolePrint("ReadToEnd: %p\n", ReadToEnd);
