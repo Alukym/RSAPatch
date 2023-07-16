@@ -64,6 +64,7 @@ public:
 PVOID oGetPublicKey = nullptr;
 PVOID oGetPrivateKey = nullptr;
 PVOID oReadToEnd = nullptr;
+PVOID oFromXmlString = nullptr;
 LPCSTR gcpb = "<RSAKeyValue><Modulus>xbbx2m1feHyrQ7jP+8mtDF/pyYLrJWKWAdEv3wZrOtjOZzeLGPzsmkcgncgoRhX4dT+1itSMR9j9m0/OwsH2UoF6U32LxCOQWQD1AMgIZjAkJeJvFTrtn8fMQ1701CkbaLTVIjRMlTw8kNXvNA/A9UatoiDmi4TFG6mrxTKZpIcTInvPEpkK2A7Qsp1E4skFK8jmysy7uRhMaYHtPTsBvxP0zn3lhKB3W+HTqpneewXWHjCDfL7Nbby91jbz5EKPZXWLuhXIvR1Cu4tiruorwXJxmXaP1HQZonytECNU/UOzP6GNLdq0eFDE4b04Wjp396551G99YiFP2nqHVJ5OMQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
 
 PVOID Detour(PVOID func, PVOID jmp, bool attach)
@@ -148,6 +149,13 @@ Array<BYTE>* __fastcall hkGetRSAKey()
 	Utils::ConsolePrint("\n");
 
 	return data;
+}
+
+void __fastcall hkFromXmlString() // what arg
+{
+	Utils::ConsolePrint("Call FromXmlString");
+
+	// Can someone please write the rest of this code
 }
 
 String* __fastcall hkReadToEnd(void* rcx, void* rdx)
@@ -252,7 +260,7 @@ uintptr_t FindEntry(uintptr_t addr)
 	return 0;
 }
 
-void OldVersion() // <= 3.5.0 
+void Version3_5_0() // <= 3.5.0
 {
 	auto GetPublicKey = Utils::PatternScan("UserAssembly.dll", "48 BA 45 78 70 6F 6E 65 6E 74 48 89 90 ? ? ? ? 48 BA 3E 3C 2F 52 53 41 4B 65"); // 'Exponent></RSAKe'
 	auto GetPrivateKey = Utils::PatternScan("UserAssembly.dll", "2F 49 6E 76 65 72 73 65"); // '/Inverse'
@@ -274,6 +282,24 @@ void OldVersion() // <= 3.5.0
 
 	Utils::ConsolePrint("Hooked GetPublicKey - Original at: %p\n", oGetPublicKey);
 	Utils::ConsolePrint("Hooked GetPrivateKey - Original at: %p\n", oGetPrivateKey);
+}
+
+void Version3_8_0(DWORD timestamp) // <= 3.8.0
+{
+	const char* ReadToEndPattern = "";
+
+	if (timestamp <= 0x645B9C78) ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05"; // 3.5.5x
+	else if (timestamp <= 0x64665A11) ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 80 3D 8E ? ? 04 00 48 8B D9"; // 3.7.5
+	else ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05"; // 3.8.0
+
+	auto ReadToEnd = Utils::PatternScan("UserAssembly.dll", ReadToEndPattern);
+	Utils::ConsolePrint("ReadToEnd: %p\n", ReadToEnd);
+
+	if (!ReadToEnd || ReadToEnd % 16 > 0)
+		Utils::ConsolePrint("Failed to find ReadToEnd - Need to update\n");
+
+	oReadToEnd = Detour((PVOID)ReadToEnd, hkReadToEnd, true);
+	Utils::ConsolePrint("Hooked ReadToEnd - Original at: %p\n", oReadToEnd);
 }
 
 void ACheckForThoseWhoCannotFollowInstructions(LPVOID instance)
@@ -373,25 +399,26 @@ DWORD __stdcall Thread(LPVOID p)
 	DWORD timestamp = nt->FileHeader.TimeDateStamp;
 	Utils::ConsolePrint("timeStamp: %p\n", timestamp);
 
-	const char* ReadToEndPattern = "";
-
 	if (timestamp <= 0x63ECA960)
 	{
-		OldVersion();
+		Version3_5_0();
 		return 0;
 	}
-	else if (timestamp <= 0x645B9C78) ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05"; //3.5.5x
-	else if (timestamp <= 0x64665A11) ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 80 3D 8E ? ? 04 00 48 8B D9"; // 3.7.5
-	else ReadToEndPattern = "48 89 5C 24 ? 48 89 74 24 ? 48 89 7C 24 ? 41 56 48 83 EC 20 48 83 79 ? ? 48 8B D9 75 05"; // 3.8.0
+	else if (timestamp <= 0x6492A703)
+	{
 
-	auto ReadToEnd = Utils::PatternScan("UserAssembly.dll", ReadToEndPattern);
-	Utils::ConsolePrint("ReadToEnd: %p\n", ReadToEnd);
+		Version3_8_0(timestamp);
+		return 0;
+	}
 
-	if (!ReadToEnd || ReadToEnd % 16 > 0)
-		Utils::ConsolePrint("Failed to find ReadToEnd - Need to update\n");
+	auto FromXmlString = Utils::PatternScan("UserAssembly.dll", "48 8B C4 48 89 58 10 48 89 78 18 4C 89 70 20 55 48 8D 68 A1 48 81 EC A0 00 00 00 48 8B FA 4C 8B F1 48 85 D2 0F 84 5F 04 00 00");
+	Utils::ConsolePrint("FromXmlString: %p\n", FromXmlString);
 
-	oReadToEnd = Detour((PVOID)ReadToEnd, hkReadToEnd, true);
-	Utils::ConsolePrint("Hooked ReadToEnd - Original at: %p\n", oReadToEnd);
+	if (!FromXmlString || FromXmlString % 16 > 0)
+		Utils::ConsolePrint("Failed to find FromXmlString - Need to update\n");
+
+	oFromXmlString = Detour((PVOID)FromXmlString, hkFromXmlString, true);
+	Utils::ConsolePrint("Hooked FromXmlString - Original at: %p\n", oFromXmlString);
 
 	return 0;
 }
