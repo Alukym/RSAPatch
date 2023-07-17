@@ -151,11 +151,34 @@ Array<BYTE>* __fastcall hkGetRSAKey()
 	return data;
 }
 
-void __fastcall hkFromXmlString() // what arg
+void __fastcall hkFromXmlString(void* rcx, String* xmlString, void* r8)
 {
-	Utils::ConsolePrint("Call FromXmlString");
+	if (wcsstr(xmlString->c_str(), L"<RSAKeyValue>"))
+		Utils::ConsolePrint("hi RSAKeyValue\n");
+	
+	Utils::ConsolePrint("original:\n");
+	Utils::ConsolePrint("%ls\n\n", xmlString->c_str());
 
-	// Can someone please write the rest of this code
+	std::string customKey = gcpb;
+
+	if (customKey.size() <= xmlString->size())
+	{
+		ZeroMemory(xmlString->chars, xmlString->size() * 2);
+		std::wstring wstr = std::wstring(customKey.begin(), customKey.end());
+		memcpy_s(xmlString->chars, xmlString->size() * 2, wstr.data(), wstr.size() * 2);
+	}
+	else
+	{
+		Utils::ConsolePrint("custom key longer than original\n");
+	}
+
+	Utils::ConsolePrint("customKey size: %d original size: %d\n", customKey.size(), xmlString->size());
+
+	Utils::ConsolePrint("using grasscutter public key\n");
+
+	Utils::ConsolePrint("%ls\n\n", xmlString->c_str());
+
+	(decltype(&hkFromXmlString)(oFromXmlString)(rcx, xmlString, r8));
 }
 
 String* __fastcall hkReadToEnd(void* rcx, void* rdx)
@@ -392,7 +415,6 @@ DWORD __stdcall Thread(LPVOID p)
 	}
 
 	DisableVMP();
-
 	auto UserAssembly = (uintptr_t)GetModuleHandleA("UserAssembly.dll");
 	PIMAGE_DOS_HEADER dos = (PIMAGE_DOS_HEADER)UserAssembly;
 	PIMAGE_NT_HEADERS nt = (PIMAGE_NT_HEADERS)(UserAssembly + dos->e_lfanew);
