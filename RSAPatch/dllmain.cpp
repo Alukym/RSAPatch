@@ -151,34 +151,54 @@ Array<BYTE>* __fastcall hkGetRSAKey()
 	return data;
 }
 
-void __fastcall hkFromXmlString(void* rcx, String* xmlString, void* r8)
+void __fastcall hkFromXmlString(void* rcx, String* xmlString)
 {
-	if (wcsstr(xmlString->c_str(), L"<RSAKeyValue>"))
-		Utils::ConsolePrint("hi RSAKeyValue\n");
-	
 	Utils::ConsolePrint("original:\n");
-	Utils::ConsolePrint("%ls\n\n", xmlString->c_str());
+	// Utils::ConsolePrint("%ls\n\n", xmlString->c_str()); // will cause the game to crash
+	for (int i = 0; i < xmlString->size(); i++)
+		Utils::ConsolePrint("%c", xmlString->chars[i]);
+	Utils::ConsolePrint("\n\n");
 
-	std::string customKey = gcpb;
+	bool isPrivate = wcsstr(xmlString->c_str(), L"<InverseQ>");
+	std::string customKey{};
 
-	if (customKey.size() <= xmlString->size())
+	if (isPrivate)
 	{
-		ZeroMemory(xmlString->chars, xmlString->size() * 2);
-		std::wstring wstr = std::wstring(customKey.begin(), customKey.end());
-		memcpy_s(xmlString->chars, xmlString->size() * 2, wstr.data(), wstr.size() * 2);
+		Utils::ConsolePrint("private\n");
+		customKey = ReadFile("PrivateKey.txt");
 	}
 	else
 	{
-		Utils::ConsolePrint("custom key longer than original\n");
+		Utils::ConsolePrint("public\n");
+		customKey = ReadFile("PublicKey.txt");
+		if (customKey.empty())
+		{
+			Utils::ConsolePrint("using grasscutter public key\n");
+			customKey = gcpb;
+		}
+	}
+
+	if (!customKey.empty())
+	{
+		if (customKey.size() <= xmlString->size())
+		{
+			ZeroMemory(xmlString->chars, xmlString->size() * 2);
+			std::wstring wstr = std::wstring(customKey.begin(), customKey.end());
+			memcpy_s(xmlString->chars, xmlString->size() * 2, wstr.data(), wstr.size() * 2);
+		}
+		else
+		{
+			Utils::ConsolePrint("custom key longer than original\n");
+		}
 	}
 
 	Utils::ConsolePrint("customKey size: %d original size: %d\n", customKey.size(), xmlString->size());
 
-	Utils::ConsolePrint("using grasscutter public key\n");
+	for (int i = 0; i < xmlString->size(); i++)
+		Utils::ConsolePrint("%c", xmlString->chars[i]);
+	Utils::ConsolePrint("\n\n");
 
-	Utils::ConsolePrint("%ls\n\n", xmlString->c_str());
-
-	(decltype(&hkFromXmlString)(oFromXmlString)(rcx, xmlString, r8));
+	(decltype(&hkFromXmlString)(oFromXmlString)(rcx, xmlString));
 }
 
 String* __fastcall hkReadToEnd(void* rcx, void* rdx)
@@ -433,7 +453,7 @@ DWORD __stdcall Thread(LPVOID p)
 		return 0;
 	}
 
-	auto FromXmlString = Utils::PatternScan("UserAssembly.dll", "48 8B C4 48 89 58 10 48 89 78 18 4C 89 70 20 55 48 8D 68 A1 48 81 EC A0 00 00 00 48 8B FA 4C 8B F1 48 85 D2 0F 84 5F 04 00 00");
+	auto FromXmlString = Utils::PatternScan("UserAssembly.dll", "48 8B C4 48 89 58 10 48 89 78 18 4C 89 70 20 55 48 8D 68 A1 48 81 EC A0 00 00 00 48 8B FA 4C 8B F1");
 	Utils::ConsolePrint("FromXmlString: %p\n", FromXmlString);
 
 	if (!FromXmlString || FromXmlString % 16 > 0)
